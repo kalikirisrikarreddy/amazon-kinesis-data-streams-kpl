@@ -1,5 +1,7 @@
 package amazon.kinesis;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -20,15 +22,17 @@ public class EmployeeDataProducer {
 	public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 	public static final ObjectWriter OBJECT_WRITER = OBJECT_MAPPER.writerFor(Employee.class);
 	private static final String KINESIS_DATA_STREAM_NAME = "employee-data-stream";
+	private static final String N_STR = System.getenv("N");
+	private static final int N = isBlank(N_STR) ? 1000 : Integer.parseInt(N_STR);
 
 	public static void main(String[] args) throws JsonProcessingException, InterruptedException {
-		KinesisProducerConfiguration kinesisProducerConfiguration = new KinesisProducerConfiguration();
-		kinesisProducerConfiguration.setRecordMaxBufferedTime(5000L);
-		kinesisProducerConfiguration.setMaxConnections(Runtime.getRuntime().availableProcessors());
-		kinesisProducerConfiguration.setRequestTimeout(30000L);
+		KinesisProducerConfiguration kpc = new KinesisProducerConfiguration();
+		kpc.setRecordMaxBufferedTime(30000L);
+		kpc.setRequestTimeout(30000L);
+		kpc.setRecordTtl(60000L);
 
-		KinesisProducer kinesisProducer = new KinesisProducer(kinesisProducerConfiguration);
-		FutureCallback<UserRecordResult> myCallback = new FutureCallback<UserRecordResult>() {
+		KinesisProducer kinesisProducer = new KinesisProducer(kpc);
+		FutureCallback<UserRecordResult> myCallback = new FutureCallback<>() {
 			@Override
 			public void onFailure(Throwable t) {
 				t.printStackTrace();
@@ -41,7 +45,7 @@ public class EmployeeDataProducer {
 			};
 		};
 		Faker faker = new Faker();
-		for (int i = 0; i < 100; ++i) {
+		for (int i = 0; i < N; ++i) {
 			String uuid = UUID.randomUUID().toString();
 			ByteBuffer data = ByteBuffer.wrap(OBJECT_WRITER.writeValueAsBytes(
 					new Employee(uuid, faker.name().fullName(), faker.company().profession(), faker.company().name())));
@@ -49,6 +53,6 @@ public class EmployeeDataProducer {
 			System.out.println("produced " + (i + 1) + "th record");
 			Futures.addCallback(f, myCallback, Executors.newCachedThreadPool());
 		}
-		Thread.sleep(30000L);
+		Thread.sleep(60000L);
 	}
 }
