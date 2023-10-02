@@ -27,9 +27,9 @@ public class EmployeeDataProducer {
 
 	public static void main(String[] args) throws JsonProcessingException, InterruptedException {
 		KinesisProducerConfiguration kpc = new KinesisProducerConfiguration();
-		kpc.setRecordMaxBufferedTime(30000L);
-		kpc.setRequestTimeout(30000L);
-		kpc.setRecordTtl(60000L);
+		kpc.setRecordMaxBufferedTime(60000L);
+		kpc.setRequestTimeout(60000L);
+		kpc.setRecordTtl(Integer.MAX_VALUE);
 
 		KinesisProducer kinesisProducer = new KinesisProducer(kpc);
 		FutureCallback<UserRecordResult> myCallback = new FutureCallback<>() {
@@ -53,6 +53,6 @@ public class EmployeeDataProducer {
 			System.out.println("produced " + (i + 1) + "th record");
 			Futures.addCallback(f, myCallback, Executors.newCachedThreadPool());
 		}
-		Thread.sleep(60000L);
+		Thread.sleep(600 * 1000L);
 	}
 }
